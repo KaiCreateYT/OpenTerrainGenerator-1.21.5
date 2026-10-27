@@ -1,0 +1,174 @@
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                    Deep Dark Underground Biome                  | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+# Deep Dark appears deep underground under all surface biomes.
+# Sculk blocks, sculk sensors, sculk shriekers, ancient cities.
+# Oppressive atmosphere with dark fog and eerie ambient sounds.
+# In vanilla, aquifers are forced empty here (dry biome).
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                   Underground Biome Settings                    | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+IsUndergroundBiome: true
+UndergroundMinY: -64
+UndergroundMaxY: -20
+UndergroundPriority: 5
+UndergroundBiomeRarity: 15.0
+
+# Deep Dark appears under all surface biomes
+MinSurfaceTemperature: 0.0
+MaxSurfaceTemperature: 2.0
+MinSurfaceWetness: 0.0
+MaxSurfaceWetness: 1.0
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                       Visuals and weather                       | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+BiomeTemperature: 0.8
+BiomeWetness: 0.4
+
+SkyColor: 0x78a7ff
+WaterColor: 0x1E97F2
+WaterFogColor: 0x050533
+FogColor: 0x0A0A1A
+FogDensity: 0.15
+
+GrassColor: 0xFFFFFF
+GrassColorModifier: None
+FoliageColor: 0xFFFFFF
+
+# Eerie sculk mood and atmosphere
+MoodSound: minecraft:ambient.cave
+MoodSoundDelay: 6000
+MoodSearchRange: 8
+MoodOffset: 2.0
+
+AmbientSound: minecraft:ambient.cave
+AdditionsSound: minecraft:ambient.cave
+AdditionsTickChance: 0.001
+
+Music: minecraft:music.overworld.deep_dark
+MusicMinDelay: 12000
+MusicMaxDelay: 24000
+ReplaceCurrentMusic: true
+
+# Sculk particles
+ParticleType: minecraft:sculk_charge_pop
+ParticleProbability: 0.005
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                         Resource Queue                          | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+# --- Vanilla Deep Dark features via Registry ---
+Registry(minecraft:sculk_patch_deep_dark,UNDERGROUND_DECORATION)
+Registry(minecraft:sculk_vein,UNDERGROUND_DECORATION)
+
+# --- Ores ---
+# Standard stone ores (less generous — deep dark is sparse)
+Ore(minecraft:dirt,33,6,100.0,0,255,minecraft:stone)
+Ore(minecraft:gravel,33,5,100.0,0,255,minecraft:stone)
+Ore(minecraft:granite,33,6,100.0,0,79,minecraft:stone)
+Ore(minecraft:diorite,33,6,100.0,0,79,minecraft:stone)
+Ore(minecraft:andesite,33,6,100.0,0,79,minecraft:stone)
+Ore(minecraft:coal_ore,17,15,100.0,0,127,minecraft:stone)
+Ore(minecraft:iron_ore,9,15,100.0,0,63,minecraft:stone)
+Ore(minecraft:gold_ore,9,2,100.0,0,31,minecraft:stone)
+Ore(minecraft:redstone_ore,8,8,100.0,0,15,minecraft:stone)
+Ore(minecraft:diamond_ore,8,2,100.0,0,15,minecraft:stone)
+Ore(minecraft:lapis_ore,7,1,100.0,0,15,minecraft:stone)
+
+# Deepslate ores — primary in deep dark
+Ore(minecraft:deepslate_coal_ore,17,20,100.0,-64,0,minecraft:deepslate)
+Ore(minecraft:deepslate_iron_ore,9,20,100.0,-64,0,minecraft:deepslate)
+Ore(minecraft:deepslate_gold_ore,9,4,100.0,-64,-16,minecraft:deepslate)
+Ore(minecraft:deepslate_redstone_ore,8,10,100.0,-64,-16,minecraft:deepslate)
+Ore(minecraft:deepslate_diamond_ore,8,3,100.0,-64,-16,minecraft:deepslate)
+Ore(minecraft:deepslate_lapis_ore,7,2,100.0,-64,-16,minecraft:deepslate)
+
+# --- No underground lakes — Deep Dark is dry in vanilla ---
+
+# Lava only at deepest levels
+Liquid(minecraft:lava,10,100.0,-64,-54,minecraft:stone,minecraft:deepslate)
+
+# --- Dungeons ---
+Dungeon(4.0,10,100)
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                              Blocks                             | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+StoneBlock: minecraft:stone
+SurfaceBlock: minecraft:grass_block
+GroundBlock: minecraft:dirt
+UnderWaterSurfaceBlock: minecraft:dirt
+SurfaceAndGroundControl:
+ReplacedBlocks:
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                          Resource queue                         | #
+Registry(minecraft:freeze_top_layer,TOP_LAYER_MODIFICATION)
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                         Sapling resource                        | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                        Vanilla structures                       | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+StrongholdsEnabled: true
+WoodlandMansionsEnabled: false
+OceanMonumentsEnabled: false
+NetherFortressesEnabled: false
+VillageType: disabled
+VillageSize: 6
+MineshaftType: normal
+MineshaftProbability: 0.004
+RareBuildingType: disabled
+BuriedTreasureEnabled: true
+BuriedTreasureProbability: 0.01
+ShipWreckEnabled: true
+ShipWreckBeachedEnabled: false
+PillagerOutpostEnabled: false
+PillagerOutpostSize: 7
+BastionRemnantEnabled: false
+BastionRemnantSize: 6
+NetherFossilEnabled: false
+EndCityEnabled: false
+RuinedPortalType: normal
+OceanRuinsType: cold
+OceanRuinsLargeProbability: 0.3
+OceanRuinsClusterProbability: 0.9
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                           Mob spawning                          | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+SpawnMonsters: []
+SpawnCreatures: []
+SpawnWaterCreatures: []
+SpawnAmbientCreatures: []
+SpawnWaterAmbientCreatures: []
+SpawnMiscCreatures: []
+InheritMobsBiomeName: minecraft:deep_dark

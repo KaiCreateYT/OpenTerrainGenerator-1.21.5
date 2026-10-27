@@ -1,0 +1,10 @@
+# WorldPreset: defines a complete world with OTG dimensions.
+# See "Example 4.yaml" for full documentation and all available options.
+#
+# This config creates an OTG overworld using OTG's "Default" preset,
+# and adds a custom dimension using the "VanillaVistas" preset.
+---
+Overworld:
+  PresetFolderName: "Default"
+Dimensions:
+- PresetFolderName: "VanillaVistas"

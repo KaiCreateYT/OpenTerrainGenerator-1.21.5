@@ -1,0 +1,26 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url "https://maven.fabricmc.net/" }
+        maven { url "https://maven.architectury.dev/" }
+        maven { url "https://maven.neoforged.net/releases" }
+    }
+}
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = "OpenTerrainGenerator"
+
+include(
+        'common:common-annotation',
+        "common:common-util",
+        "common:common-customobject",
+        "common:common-generator",
+        "common:common-core",
+        "common:common-test",
+        "platforms:shared",
+        "platforms:fabric",
+        "platforms:neoforge",
+)

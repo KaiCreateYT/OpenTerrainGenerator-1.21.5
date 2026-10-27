@@ -1,0 +1,194 @@
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                          Biome Identity                         | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+TemplateForBiome: false
+
+BiomeDictTags: HOT, WET, JUNGLE, FOREST, OVERWORLD
+
+BiomeCategory: jungle
+
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                         Biome placement                         | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+BiomeSize: 4
+
+BiomeRarity: 100
+
+BiomeColor: 0x738533
+
+
+#######################################################################
+# |                           Isle biomes                           | #
+#######################################################################
+
+IsleInBiome:
+
+BiomeSizeWhenIsle: 6
+
+BiomeRarityWhenIsle: 97
+
+#################
+# Border biomes #
+#################
+
+BiomeIsBorder: Jungle
+
+OnlyBorderNear:
+
+NotBorderNear: Jungle Hills
+
+BiomeSizeWhenBorder: 8
+
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                  Terrain height and volatility                  | #
+BiomeHeight: 0.3
+BiomeVolatility: 0.2
+SmoothRadius: 6
+CustomHeightControlSmoothRadius: 2
+MaxAverageHeight: 11
+MaxAverageDepth: 0.0
+Volatility1: 0.2
+Volatility2: 0.1
+VolatilityWeight1: 48.0
+VolatilityWeight2: 46.8
+Volatility: 0.0
+DisableBiomeHeight: false
+ContinentalScale: 0.4032:0.6032
+ErosionScale: -0.0199:0.1801
+WeirdnessScale: 0.4593:0.6593
+CustomHeightControl: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                              Blocks                             | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+StoneBlock: minecraft:stone
+SurfaceBlock: minecraft:grass_block
+GroundBlock: minecraft:dirt
+UnderWaterSurfaceBlock: minecraft:dirt
+SurfaceAndGroundControl:
+ReplacedBlocks:
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                   Water / Lava & Frozen States                  | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+UseWorldWaterLevel: true
+WaterLevelMax: 63
+WaterLevelMin: 0
+WaterBlock: minecraft:water
+IceBlock: minecraft:ice
+PackedIceBlock: minecraft:packed_ice
+SnowBlock: minecraft:snow_block
+CooledLavaBlock: minecraft:lava
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                       Visuals and weather                       | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+BiomeTemperature: 0.95
+UseFrozenOceanTemperature: false
+BiomeWetness: 0.9
+SkyColor: 0x77a8ff
+WaterColor: 0x1E97F2
+WaterColorControl:
+GrassColor: 0xFFFFFF
+GrassColorControl:
+GrassColorModifier: None
+FoliageColor: 0xFFFFFF
+FoliageColorControl:
+FogColor: 0xC0D8FF
+FogDensity: 0.0
+WaterFogColor: 0x050533
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                          Resource queue                         | #
+Registry(minecraft:freeze_top_layer,TOP_LAYER_MODIFICATION)
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                         Sapling resource                        | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                        Vanilla structures                       | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+StrongholdsEnabled: true
+
+WoodlandMansionsEnabled: false
+
+OceanMonumentsEnabled: false
+
+NetherFortressesEnabled: false
+
+VillageType: disabled
+
+VillageSize: 6
+
+MineshaftType: normal
+
+MineshaftProbability: 0.004
+
+RareBuildingType: jungleTemple
+
+BuriedTreasureEnabled: false
+
+BuriedTreasureProbability: 0.01
+
+ShipWreckEnabled: false
+
+ShipWreckBeachedEnabled: false
+
+PillagerOutpostEnabled: false
+
+PillagerOutpostSize: 7
+
+BastionRemnantEnabled: false
+
+BastionRemnantSize: 6
+
+NetherFossilEnabled: false
+
+EndCityEnabled: false
+
+RuinedPortalType: jungle
+
+OceanRuinsType: disabled
+
+OceanRuinsLargeProbability: 0.3
+
+OceanRuinsClusterProbability: 0.9
+
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                           Mob spawning                          | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+SpawnMonsters: []
+SpawnCreatures: []
+SpawnWaterCreatures: []
+SpawnAmbientCreatures: []
+SpawnWaterAmbientCreatures: []
+SpawnMiscCreatures: []
+InheritMobsBiomeName: minecraft:jungle

@@ -1,0 +1,340 @@
+﻿diff --git a/common/common-core/src/main/java/com/pg85/otg/gen/OTGChunkGenerator.java b/common/common-core/src/main/java/com/pg85/otg/gen/OTGChunkGenerator.java
+index 9d5e8d9ab..8cbcf5162 100644
+--- a/common/common-core/src/main/java/com/pg85/otg/gen/OTGChunkGenerator.java
++++ b/common/common-core/src/main/java/com/pg85/otg/gen/OTGChunkGenerator.java
+@@ -11,8 +11,11 @@ import com.pg85.otg.gen.carver.Carver;
+ import com.pg85.otg.gen.carver.CaveCarver;
+ import com.pg85.otg.gen.carver.RavineCarver;
+ import com.pg85.otg.gen.noise.OctavePerlinNoiseSampler;
++import com.pg85.otg.gen.noise.PerlinNoiseSampler;
+ import com.pg85.otg.gen.noise.TerrainNoiseComputer;
+ import com.pg85.otg.gen.noise.legacy.NoiseGeneratorPerlinMesaBlocks;
++import com.pg85.otg.util.materials.LocalMaterialData;
++import com.pg85.otg.util.materials.LocalMaterials;
+ import com.pg85.otg.interfaces.*;
+ import com.pg85.otg.presets.DimensionPreset;
+ import com.pg85.otg.util.ChunkCoordinate;
+@@ -79,11 +82,27 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+     private OctavePerlinNoiseSampler lowerInterpolatedNoise; // Volatility1 noise
+     private OctavePerlinNoiseSampler upperInterpolatedNoise; // Volatility2 noise
+     private OctavePerlinNoiseSampler depthNoise;
++    private PerlinNoiseSampler deepslateNoise; // noisy stone->deepslate boundary around Y=0
+ 
+     private final DimensionPreset preset;
+     private final OTGWorldInfo otgWorldInfo;
+     private long seed;
+     private final CachedBiomeProvider cachedBiomeProvider;
++    private final com.pg85.otg.interfaces.ILayerSource undergroundLayerSource;
++    private final IBiome[] undergroundBiomesById;
++    private volatile java.util.function.ToIntBiFunction<Integer, Integer> surfaceHeightEstimator;
++    private volatile com.pg85.otg.gen.biome.UndergroundBiomeResolver undergroundResolver;
++
++    /**
++     * Set while generating a throwaway "shadow" chunk for surface-height estimation.
++     * Such chunks only need terrain shape, so populateNoise skips the underground biome
++     * map ΓÇö otherwise building the map calls the height estimator, which generates another
++     * shadow chunk, which builds another map... recursing infinitely (StackOverflowError).
++     */
++    public static final ThreadLocal<Boolean> GENERATING_SHADOW_CHUNK = ThreadLocal.withInitial(() -> Boolean.FALSE);
++
++    /** Current chunk's underground biome map, bound during fillFromNoise so the cave-density graph can read per-region cave scales. */
++    public static final ThreadLocal<com.pg85.otg.interfaces.IUndergroundBiomeMap> CURRENT_CAVE_MAP = new ThreadLocal<>();
+ 
+     private static final int NOISE_SIZE_X = 4;
+     @Getter
+@@ -96,7 +115,6 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+     // Carvers
+     private final Carver caves;
+     private final Carver ravines;
+-
+     // Biome blocks noise
+     // TODO: Use new noise?
+     private final ThreadLocal<double[]> biomeBlocksNoise =
+@@ -132,6 +150,8 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+         this.preset = preset;
+         this.otgWorldInfo = otgWorldInfo;
+         this.cachedBiomeProvider = new CachedBiomeProvider(biomeProvider, biomesById);
++        this.undergroundLayerSource = biomeProvider;
++        this.undergroundBiomesById = biomesById;
+ 
+         this.noiseSizeY = otgWorldInfo.getHeight() / Constants.PIECE_Y_SIZE;
+         this.noiseCache = ThreadLocal.withInitial(() -> new NoiseCache(128, this.noiseSizeY + 1));
+@@ -152,6 +172,9 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+ 
+     public void setSeed(long seed) {
+         this.seed = seed;
++        // Force the lazy underground resolver to rebuild with the new seed (keeps it
++        // consistent with the biome source's resolver, which also rebuilds on setSeed).
++        this.undergroundResolver = null;
+         this.cachedBiomeProvider.setSeed(seed);
+         // Setup noises
+         Random random = new Random(seed);
+@@ -162,6 +185,73 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+         this.upperInterpolatedNoise = samplers.upper();
+         this.depthNoise = samplers.depth();
+         this.biomeBlocksNoiseGen = new NoiseGeneratorPerlinMesaBlocks(random, 4);
++        // Separate seed so it doesn't perturb the terrain sampler sequence above.
++        this.deepslateNoise = new PerlinNoiseSampler(new Random(seed ^ 0x6CB9D7E3A155EC53L));
++    }
++
++    private static final int DEEPSLATE_BAND = 8;
++    private static final double DEEPSLATE_NOISE_SCALE = 1.0 / 16.0;
++
++    /**
++     * Picks the terrain fill block for a column position, applying the biome's ReplaceBlocks.
++     * Custom StoneBlock biomes use their block everywhere. Default-stone biomes transition from
++     * stone to deepslate across a noisy band around Y=0 (instead of a flat cut at exactly Y=0).
++     */
++    private LocalMaterialData stoneOrDeepslate(SurfaceSettings ss, int x, int y, int z) {
++        LocalMaterialData base;
++        if (ss.hasCustomStoneBlock()) {
++            base = ss.getStoneBlock();
++        } else if (y > DEEPSLATE_BAND) {
++            base = ss.getStoneBlock();
++        } else if (y < -DEEPSLATE_BAND) {
++            base = LocalMaterials.DEEPSLATE;
++        } else {
++            double n = deepslateNoise.sample(
++                    x * DEEPSLATE_NOISE_SCALE, y * DEEPSLATE_NOISE_SCALE, z * DEEPSLATE_NOISE_SCALE, 0.0, 0.0);
++            double bias = -(double) y / DEEPSLATE_BAND; // +1 at y=-band (deepslate), -1 at y=+band (stone)
++            base = (n < bias) ? LocalMaterials.DEEPSLATE : ss.getStoneBlock();
++        }
++        return ss.applyStoneReplacement(base, y);
++    }
++
++    public void setSurfaceHeightEstimator(java.util.function.ToIntBiFunction<Integer, Integer> estimator) {
++        this.surfaceHeightEstimator = estimator;
++    }
++
++    private com.pg85.otg.gen.biome.UndergroundBiomeResolver undergroundResolver() {
++        com.pg85.otg.gen.biome.UndergroundBiomeResolver r = this.undergroundResolver;
++        if (r == null) {
++            synchronized (this) {
++                r = this.undergroundResolver;
++                if (r == null) {
++                    r = new com.pg85.otg.gen.biome.UndergroundBiomeResolver(this.undergroundBiomesById, this.seed);
++                    this.undergroundResolver = r;
++                }
++            }
++        }
++        return r;
++    }
++
++    public com.pg85.otg.gen.biome.UndergroundBiomeMap buildUndergroundBiomeMap(
++            com.pg85.otg.util.ChunkCoordinate chunkCoord,
++            com.pg85.otg.util.gen.OTGWorldInfo worldInfo) {
++        return com.pg85.otg.gen.biome.UndergroundBiomeMap.build(
++                undergroundResolver(), this.undergroundLayerSource.getSampler(),
++                this.surfaceHeightEstimator, chunkCoord, worldInfo, this.undergroundBiomesById);
++    }
++
++    /** @return true if any underground biome defines a non-1.0 cave-type scale (else carving uses constant scaling). */
++    public boolean hasUndergroundCaveScaling() {
++        if (this.undergroundBiomesById == null) return false;
++        for (IBiome b : this.undergroundBiomesById) {
++            if (b == null) continue;
++            com.pg85.otg.config.settings.biome.UndergroundBiomeSettings ubs = b.getBiomeSettings().getUndergroundSettings();
++            if (ubs == null || !ubs.isUndergroundBiome()) continue;
++            for (float s : ubs.getCaveScales()) {
++                if (s != 1.0f) return true;
++            }
++        }
++        return false;
+     }
+ 
+     public ICachedBiomeProvider getCachedBiomeProvider() {
+@@ -247,10 +337,8 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+     private void generateNoiseColumn(double[] noiseColumn, int noiseX, int noiseZ) {
+         BiomeSettings center = this.cachedBiomeProvider.getNoiseBiomeConfig(noiseX, noiseZ, true);
+ 
+-        // === Phase 1: Compute weighted biome settings (always runs for centerHeight) ===
+-
+-        float height = 0;
+-        float volatility = 0;
++        float height = 0; // depth
++        float volatility = 0; // scale
+         double volatility1 = 0;
+         double volatility2 = 0;
+         double horizontalFracture = 0;
+@@ -262,7 +350,7 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+         double[] chc = new double[this.noiseSizeY + 1];
+         float weight = 0;
+         BiomeTerrainSettings centerTerrainSettings = center.getTerrainSettings();
+-        float centerBiomeHeight = centerTerrainSettings.getBiomeHeight();
++        float centerHeight = centerTerrainSettings.getBiomeHeight();
+         int smoothRadius = centerTerrainSettings.getSmoothRadius();
+         int chcSmoothRadius = centerTerrainSettings.getCHCSmoothRadius();
+         int largestRadius = Math.max(smoothRadius, chcSmoothRadius);
+@@ -298,8 +386,10 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+                 biomeTerrainSettings = biome.getTerrainSettings();
+                 heightAt = biomeTerrainSettings.getBiomeHeight();
+                 weightAt = BIOME_WEIGHT_TABLE[x1 + 32 + (z1 + 32) * 65] / (heightAt + 2.0F);
+-                weightAt = Math.abs(weightAt);
+-                if (heightAt > centerBiomeHeight) {
++                weightAt = Math.abs(weightAt); // This is required to prevent seams when height goes below -2
++                // Vanilla halves the weight of neighbors that are higher than the center biome,
++                // creating softer low-to-high transitions and preventing steep cliffs at biome borders
++                if (heightAt > centerHeight) {
+                     weightAt /= 2.0F;
+                 }
+ 
+@@ -315,7 +405,6 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+                 volatilityWeight2 += biomeTerrainSettings.getVolatilityWeight2() * weightAt;
+                 maxAverageDepth += biomeTerrainSettings.getMaxAverageDepth() * weightAt;
+                 maxAverageHeight += biomeTerrainSettings.getMaxAverageHeight() * weightAt;
+-
+             }
+         }
+ 
+@@ -343,7 +432,7 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+             }
+         }
+ 
+-        // Normalize
++        // Normalize biome data
+         height /= weight;
+         volatility /= weight;
+         volatility1 /= weight;
+@@ -355,31 +444,36 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+         maxAverageDepth /= weight;
+         maxAverageHeight /= weight;
+ 
+-
++        // Normalize CHC
+         for (int y = 0; y < this.noiseSizeY + 1; y++) {
+             chc[y] /= chcWeight;
+         }
+ 
+-        volatility = volatility * 0.9f + 0.1f;
+-
++        // Vary the height with more noise
+         float extraHeight = (float) (getExtraHeightAt(noiseX, noiseZ, maxAverageDepth, maxAverageHeight) * 0.2);
++
++        // Do some math on volatility and height
++        volatility = volatility * 0.9f + 0.1f;
+         height = (height * 4.0F - 1.0F) / 8.0F;
+-        double centerHeight = REFERENCE_Y_SECTIONS * (2.0f + height + extraHeight) / 4.0f;
+ 
+-        // === Phase 2: Generate noise column ===
++        // Factor in y sections (use reference from old 256-block world for consistent terrain height)
++        height = REFERENCE_Y_SECTIONS * (2.0f + height + extraHeight) / 4.0f;
++
+         double falloff;
+         double horizontalScale;
+         double verticalScale;
+-        double noiseVal;
++        double noise;
+         for (int y = 0; y <= this.noiseSizeY; ++y) {
+-            falloff = (centerHeight - y) * 6.0 / volatility;
++            // Calculate falloff - controls how quickly terrain density drops with height difference
++            // Using fixed coefficient 6.0 (was 12*128/worldHeight which varied with world size)
++            falloff = (height - y) * 6.0D / volatility;
+             if (falloff > 0.0) {
+                 falloff *= 4.0;
+             }
+ 
+             horizontalScale = WORLD_GEN_CONSTANT * horizontalFracture;
+             verticalScale = WORLD_GEN_CONSTANT * verticalFracture;
+-            noiseVal = sampleNoise(
++            noise = sampleNoise(
+                     noiseX,
+                     y,
+                     noiseZ,
+@@ -394,22 +488,35 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+             );
+ 
+             if (!center.getTerrainSettings().isDisableBiomeHeight()) {
+-                noiseVal += falloff;
++                // Add the falloff at this height
++                noise += falloff;
+ 
+-                double heightDiff = y - centerHeight;
++                // TODO: get rid of this - anti-floating terrain should be solved via proper noise settings
++                //  and biome .bc configuration, not a hardcoded penalty
++                double heightDiff = y - height;
+                 if (heightDiff > 4) {
+                     double floatingPenalty = (heightDiff - 4) * (heightDiff - 4) * 0.5;
+-                    noiseVal -= floatingPenalty;
++                    noise -= floatingPenalty;
+                 }
+ 
++                // Reduce the last 4 layers (dynamically calculated based on world height)
++                // For 256 world (32 layers): y > 28, for 384 world (48 layers): y > 44
+                 int reductionStartY = this.noiseSizeY - 4;
+                 if (y > reductionStartY) {
+-                    noiseVal = MathHelper.clampedLerp(noiseVal, -10, ((double) y - reductionStartY) / 4.0);
++                    noise = MathHelper.clampedLerp(noise, -10, ((double) y - reductionStartY) / 4.0);
+                 }
+             }
+ 
+-            noiseVal += chc[y];
+-            noiseColumn[y] = noiseVal;
++            // Add chc data
++            noise += chc[y];
++
++            // Store value
++            noiseColumn[y] = noise;
++
++            // DEBUG: Log noise values for edge chunks at specific Y levels
++//            if (debugThisColumn && (y == 0 || y == 8 || y == 16 || y == 24 || y == 32)) {
++//                System.err.println(String.format("  y=%d: noise=%.2f, falloff=%.2f", y, noise, falloff));
++//            }
+         }
+     }
+ 
+@@ -435,6 +542,17 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+         int blockX = chunkCoord.getBlockX();
+         int blockZ = chunkCoord.getBlockZ();
+ 
++        // Shadow chunks (height probes) skip the map to avoid estimatorΓåÆshadow recursion.
++        com.pg85.otg.gen.biome.UndergroundBiomeMap undergroundMap = GENERATING_SHADOW_CHUNK.get()
++                ? com.pg85.otg.gen.biome.UndergroundBiomeMap.empty()
++                : buildUndergroundBiomeMap(chunkCoord, worldHeight);
++        // Bind the chunk's underground map for the cave-density graph (read per-block in carveWithNoise via
++        // RegionScaleFunction). MUST stay bound until carving finishes: nothing between here and the carve may
++        // re-trigger shadow-chunk gen (which would rebind EMPTY and silently disable cave scaling). Cleared in
++        // SharedOTGChunkGenerator.fillFromNoise's finally.
++        CURRENT_CAVE_MAP.set(undergroundMap);
++        SurfaceSettings[] ugSurfaceById = new SurfaceSettings[this.undergroundBiomesById.length];
++
+         // --- Phase 1: Biome lookup ---
+         long biomeStart = System.currentTimeMillis();
+         IBiome[] biomes = this.cachedBiomeProvider.getBiomesForChunk(chunkCoord);
+@@ -572,11 +690,21 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+                                 }
+                                 structureIterator.back(structures.size());
+                                 if (density > 0.0) {
++                                    SurfaceSettings placeSurface = surfaceSettings;
++                                    int ugId = undergroundMap.getUndergroundBiomeId(realX, realY, realZ);
++                                    if (ugId >= 0) {
++                                        SurfaceSettings cached = ugSurfaceById[ugId];
++                                        if (cached == null) {
++                                            cached = undergroundMap.getBiome(ugId).getBiomeSettings().getSurfaceSettings();
++                                            ugSurfaceById[ugId] = cached;
++                                        }
++                                        placeSurface = cached;
++                                    }
+                                     buffer.setBlock(
+                                             localX,
+                                             realY,
+                                             localZ,
+-                                            surfaceSettings.getStoneBlockReplaced(realY)
++                                            stoneOrDeepslate(placeSurface, realX, realY, realZ)
+                                     );
+                                     buffer.setHighestBlockForColumn(pieceX + noiseX * 4, noiseZ * 4 + pieceZ, realY);
+                                 } else if (realY < waterLevel[localX * 16 + localZ]
+@@ -814,14 +942,4 @@ public class OTGChunkGenerator implements ISurfaceGeneratorNoiseProvider {
+             return MathHelper.toLong(x, z);
+         }
+     }
+-
+-    private static double rangeRandom(double min, double max, int x, int z, int axis) {
+-        if (max <= min) return min;
+-        long seed = x * 31241L + z * 7919L + axis;
+-        seed = (seed ^ (seed >>> 30)) * 0xBF58476D1CE4E5B9L;
+-        seed = (seed ^ (seed >>> 27)) * 0xBF58476D1CE4E5B9L;
+-        seed = seed ^ (seed >>> 31);
+-        double t = (seed >>> 11) * 0x1.0p-53;
+-        return min + t * (max - min);
+-    }
+ }

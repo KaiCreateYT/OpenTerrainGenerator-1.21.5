@@ -1,0 +1,73 @@
+site_name: OpenTerrainGenerator
+site_url: https://jmcjm.github.io/OpenTerrainGenerator/
+repo_url: https://github.com/jmcjm/OpenTerrainGenerator
+repo_name: OpenTerrainGenerator
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Your First World: getting-started/your-first-world.md
+    - Creating a Preset: getting-started/creating-a-preset.md
+  - Configuration:
+    - DimensionPresetConfig.ini: config/dimension-preset-config.md
+    - Biome Config: config/biome-config.md
+    - WorldPreset YAML: config/world-presets.md
+    - Resource Queue: config/resource-queue.md
+  - Custom Objects:
+    - Overview: custom-objects/overview.md
+    - BO2: custom-objects/bo2.md
+    - BO3: custom-objects/bo3.md
+    - BO4: custom-objects/bo4.md
+  - In-Game Editor: editor/index.md
+  - Commands: commands/index.md
+  - Dimensions: dimensions/index.md
+  - Changelog: CHANGELOG.md
+
+exclude_docs: |
+  plans/
+  benchmarks/

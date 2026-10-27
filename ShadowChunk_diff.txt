@@ -1,0 +1,47 @@
+﻿diff --git a/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedShadowChunkGenerator.java b/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedShadowChunkGenerator.java
+index 1f580d08e..498065e05 100644
+--- a/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedShadowChunkGenerator.java
++++ b/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedShadowChunkGenerator.java
+@@ -2,6 +2,7 @@ package com.pg85.otg.shared.gen;
+ 
+ import java.util.*;
+ 
++import com.pg85.otg.gen.OTGChunkGenerator;
+ import com.pg85.otg.shared.biome.SharedBiome;
+ import com.pg85.otg.shared.materials.SharedMaterialData;
+ import com.pg85.otg.interfaces.IBiome;
+@@ -100,7 +101,15 @@ public class SharedShadowChunkGenerator {
+ 
+         ObjectList<JigsawStructureData> structures = new ObjectArrayList<>(10);
+         Random random = otgChunkGenerator.getRandomFromChunkCoord(chunkCoordinate);
+-        otgChunkGenerator.getInternalGenerator().populateNoise(otgWorldInfo, buffer, buffer.getChunkCoordinate(), structures, random);
++        // Mark this as shadow generation so populateNoise skips the underground biome map ΓÇö
++        // building it would call the height estimator, which generates another shadow chunk ΓåÆ infinite recursion.
++        boolean prevShadow = OTGChunkGenerator.GENERATING_SHADOW_CHUNK.get();
++        OTGChunkGenerator.GENERATING_SHADOW_CHUNK.set(Boolean.TRUE);
++        try {
++            otgChunkGenerator.getInternalGenerator().populateNoise(otgWorldInfo, buffer, buffer.getChunkCoordinate(), structures, random);
++        } finally {
++            OTGChunkGenerator.GENERATING_SHADOW_CHUNK.set(prevShadow);
++        }
+         return buffer;
+     }
+ 
+@@ -216,7 +225,7 @@ public class SharedShadowChunkGenerator {
+     }
+ 
+     private static @Nullable <T> Registry<T> getRegistry(RegistryAccess registryAccess, ResourceKey<Registry<T>> resourceKey) {
+-        Optional<Registry<T>> ops = registryAccess.lookup(resourceKey);
++        Optional<Registry<T>> ops = registryAccess.registry(resourceKey);
+ 
+         if (ops.isEmpty()) {
+             OTGLog.error("Could not get structure registry during shadow chunk gen");
+@@ -239,7 +248,7 @@ public class SharedShadowChunkGenerator {
+ 
+             map = new HashMap<>();
+             for (ResourceLocation resourceLocation : structureRegistry.keySet()) {
+-                Structure structure = structureRegistry.get(resourceLocation).map(Holder.Reference::value).orElse(null);
++                Structure structure = structureRegistry.get(resourceLocation);
+                 if (structure == null) continue;
+                 if (structure.step() != GenerationStep.Decoration.SURFACE_STRUCTURES) continue;
+ 

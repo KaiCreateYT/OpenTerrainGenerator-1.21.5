@@ -1,0 +1,125 @@
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                    Lush Caves Underground Biome                 | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+# Lush Caves appear under warm, wet surface biomes (jungle, swamp, dark forest).
+# Rich vegetation with moss, glow berries, azalea, dripleaf, and spore blossoms.
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                   Underground Biome Settings                    | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+IsUndergroundBiome: true
+UndergroundMinY: -64
+UndergroundMaxY: 256
+UndergroundPriority: 10
+UndergroundBiomeRarity: 40.0
+
+# Spawns under warm and wet surface biomes
+MinSurfaceTemperature: 0.5
+MaxSurfaceTemperature: 2.0
+MinSurfaceWetness: 0.7
+MaxSurfaceWetness: 1.0
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                       Visuals and weather                       | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+BiomeTemperature: 0.5
+BiomeWetness: 0.5
+
+SkyColor: 0x7ba4ff
+WaterColor: 0x1E97F2
+WaterFogColor: 0x050533
+FogColor: 0xC0D8FF
+FogDensity: 0.0
+
+GrassColor: 0xFFFFFF
+GrassColorModifier: None
+FoliageColor: 0xFFFFFF
+
+# Spore blossom particles floating in the air
+ParticleType: minecraft:spore_blossom_air
+ParticleProbability: 0.01
+
+MoodSound: minecraft:ambient.cave
+MoodSoundDelay: 6000
+MoodSearchRange: 8
+MoodOffset: 2.0
+
+Music: minecraft:music.overworld.lush_caves
+MusicMinDelay: 12000
+MusicMaxDelay: 24000
+ReplaceCurrentMusic: false
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                         Resource Queue                          | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+Registry(minecraft:freeze_top_layer,TOP_LAYER_MODIFICATION)
+# --- Vanilla Lush Caves features via Registry ---
+Registry(minecraft:lush_caves_clay,VEGETAL_DECORATION)
+Registry(minecraft:lush_caves_ceiling_vegetation,VEGETAL_DECORATION)
+Registry(minecraft:lush_caves_vegetation,VEGETAL_DECORATION)
+Registry(minecraft:rooted_azalea_tree,VEGETAL_DECORATION)
+Registry(minecraft:spore_blossom,VEGETAL_DECORATION)
+Registry(minecraft:cave_vine,VEGETAL_DECORATION)
+Registry(minecraft:moss_patch,VEGETAL_DECORATION)
+Registry(minecraft:dripleaf,VEGETAL_DECORATION)
+Registry(minecraft:glow_lichen,UNDERGROUND_DECORATION)
+
+# --- Ores ---
+# Standard stone ores
+Ore(minecraft:dirt,33,10,100.0,0,255,minecraft:stone)
+Ore(minecraft:gravel,33,8,100.0,0,255,minecraft:stone)
+Ore(minecraft:granite,33,10,100.0,0,79,minecraft:stone)
+Ore(minecraft:diorite,33,10,100.0,0,79,minecraft:stone)
+Ore(minecraft:andesite,33,10,100.0,0,79,minecraft:stone)
+Ore(minecraft:coal_ore,17,20,100.0,0,127,minecraft:stone)
+Ore(minecraft:iron_ore,9,20,100.0,0,63,minecraft:stone)
+Ore(minecraft:gold_ore,9,2,100.0,0,31,minecraft:stone)
+Ore(minecraft:redstone_ore,8,8,100.0,0,15,minecraft:stone)
+Ore(minecraft:diamond_ore,8,1,100.0,0,15,minecraft:stone)
+Ore(minecraft:lapis_ore,7,1,100.0,0,15,minecraft:stone)
+
+# Extra copper — Lush Caves have more copper in vanilla
+Ore(minecraft:copper_ore,10,16,100.0,0,96,minecraft:stone)
+
+# Deepslate ores
+Ore(minecraft:deepslate_coal_ore,17,20,100.0,-64,0,minecraft:deepslate)
+Ore(minecraft:deepslate_iron_ore,9,20,100.0,-64,0,minecraft:deepslate)
+Ore(minecraft:deepslate_gold_ore,9,2,100.0,-64,-16,minecraft:deepslate)
+Ore(minecraft:deepslate_redstone_ore,8,8,100.0,-64,-16,minecraft:deepslate)
+Ore(minecraft:deepslate_diamond_ore,8,1,100.0,-64,-16,minecraft:deepslate)
+Ore(minecraft:deepslate_lapis_ore,7,1,100.0,-64,-16,minecraft:deepslate)
+Ore(minecraft:deepslate_copper_ore,10,16,100.0,-64,0,minecraft:deepslate)
+
+# --- Underground lakes and liquids ---
+UnderGroundLake(25,60,2,5.0,0,49)
+Liquid(minecraft:water,20,100.0,8,128,minecraft:stone)
+Liquid(minecraft:lava,10,100.0,8,128,minecraft:stone)
+
+# --- Dungeons ---
+Dungeon(8.0,10,100)
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                           Mob spawning                          | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+SpawnMonsters: []
+SpawnCreatures: []
+SpawnWaterCreatures: []
+SpawnAmbientCreatures: []
+SpawnWaterAmbientCreatures: []
+SpawnMiscCreatures: []
+InheritMobsBiomeName: minecraft:lush_caves

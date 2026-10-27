@@ -1,0 +1,43 @@
+# OTG Terrain Generation Benchmark - Baseline Before Round 2 Optimizations
+# Date: 2026-02-04
+# Preset: DefaultPreset
+# Configuration: 200 chunks, 5 warmup, 10 measurement iterations
+
+## System Info
+# JDK: Eclipse Adoptium 17
+# Platform: Linux (Fedora)
+
+## Results (after Round 1 optimizations)
+
+Iteration 1: 200 chunks in 430.14 ms (465.0 chunks/sec)
+Iteration 2: 200 chunks in 430.78 ms (464.3 chunks/sec)
+Iteration 3: 200 chunks in 421.56 ms (474.4 chunks/sec)
+Iteration 4: 200 chunks in 432.04 ms (463.0 chunks/sec)
+Iteration 5: 200 chunks in 430.63 ms (464.4 chunks/sec)
+Iteration 6: 200 chunks in 443.32 ms (451.1 chunks/sec)
+Iteration 7: 200 chunks in 420.57 ms (475.5 chunks/sec)
+Iteration 8: 200 chunks in 424.57 ms (471.1 chunks/sec)
+Iteration 9: 200 chunks in 420.14 ms (476.0 chunks/sec)
+Iteration 10: 200 chunks in 435.16 ms (459.6 chunks/sec)
+
+=== SUMMARY ===
+Average: 428.92 ms for 200 chunks
+Throughput: 466.3 chunks/sec
+Per chunk: 2.145 ms
+Min: 420.14 ms, Max: 443.32 ms
+
+## Round 1 Optimizations Applied
+1. GRAD array flattening (SimplexNoiseSampler)
+2. BiomeSettings cache (OTGChunkGenerator)
+3. noiseData ThreadLocal buffer (OTGChunkGenerator)
+4. Bit shift in ChunkCoordinate
+5. LRUCache utility + material readers
+6. TreeMap.higherEntry for biome selection
+7. TreeMap.lastKey in BiomeGroupManager
+
+## Pending Round 2 Optimizations
+1. Boxing in ThreadLocal (Integer/Double -> primitives)
+2. Cache getSurfaceSettings() in inner loop
+3. Hoist MutableBoolean in Carver
+4. Reuse array in getBiomeBlocksNoiseValue
+5. Cache getTerrainSettings() calls

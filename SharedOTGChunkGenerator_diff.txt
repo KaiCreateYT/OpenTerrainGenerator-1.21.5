@@ -1,0 +1,418 @@
+﻿diff --git a/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedOTGChunkGenerator.java b/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedOTGChunkGenerator.java
+index 2a719ce2b..a29c9515e 100644
+--- a/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedOTGChunkGenerator.java
++++ b/platforms/shared/src/main/java/com/pg85/otg/shared/gen/SharedOTGChunkGenerator.java
+@@ -1,6 +1,7 @@
+ package com.pg85.otg.shared.gen;
+ 
+ import com.pg85.otg.OTG;
++import com.pg85.otg.config.settings.preset.NoiseCaveSettings;
+ import com.pg85.otg.util.OTGLog;
+ import com.pg85.otg.util.logging.LogCategory;
+ import com.pg85.otg.constants.Constants;
+@@ -9,9 +10,11 @@ import com.pg85.otg.customobject.structures.CustomStructureCache;
+ import com.pg85.otg.gen.OTGChunkDecorator;
+ import com.pg85.otg.gen.OTGChunkGenerator;
+ import com.pg85.otg.interfaces.IBiome;
++import com.pg85.otg.platform.noise.OTGNoiseRouterData;
+ import com.pg85.otg.presets.DimensionPreset;
+ import com.pg85.otg.shared.biome.IOTGBiomeProvider;
+ import com.pg85.otg.util.ChunkCoordinate;
++import com.pg85.otg.gen.biome.UndergroundBiomeMap;
+ import com.pg85.otg.util.gen.ChunkBuffer;
+ import com.pg85.otg.util.gen.JigsawStructureData;
+ import com.pg85.otg.util.gen.OTGWorldInfo;
+@@ -35,10 +38,10 @@ import net.minecraft.world.level.levelgen.*;
+ import net.minecraft.world.level.levelgen.blending.Blender;
+ import net.minecraft.world.level.levelgen.carver.CarvingContext;
+ import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
+-import net.minecraft.world.level.levelgen.GenerationStep.Decoration;
+ import net.minecraft.world.level.levelgen.structure.*;
+ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
++import net.minecraft.world.level.levelgen.synth.SimplexNoise;
+ import net.minecraft.world.level.NaturalSpawner;
+ import net.minecraft.world.level.storage.LevelResource;
+ import org.jetbrains.annotations.NotNull;
+@@ -83,12 +86,16 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+     protected Long seed = 0L;
+     protected ServerLevel serverLevel = null;
+     protected final OTGWorldInfo otgWorldInfo;
++    protected volatile RandomState caveRandomState = null;
++    protected volatile SimplexNoise breakthroughNoise = null;
++    protected volatile OTGNoiseRouterData.CaveDensityComponents caveComponents = null;
+ 
+     // --- Timing counters (thread-safe) ---
+     private static final int TIMING_LOG_INTERVAL = 50;
+     private final AtomicInteger fillNoiseCount = new AtomicInteger();
+     private final AtomicLong fillNoiseTotalNs = new AtomicLong();
+     private final AtomicLong populateNoiseTotalNs = new AtomicLong();
++    private final AtomicLong carveWithNoiseTotalNs = new AtomicLong();
+     private final AtomicInteger carversCount = new AtomicInteger();
+     private final AtomicLong carversTotalNs = new AtomicLong();
+     private final AtomicInteger structuresCount = new AtomicInteger();
+@@ -131,6 +138,7 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+         if (this.seed == 0L) {
+             this.setSeed(BiomeManager.obfuscateSeed(seed));
+         }
++        initCaveComponents(randomState);
+         return super.createState(structureSetLookup, randomState, seed);
+     }
+ 
+@@ -144,6 +152,55 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+         }
+     }
+ 
++    // --- Cave initialization ---
++
++    protected void initCaveComponents(RandomState randomState) {
++        if (this.caveRandomState != null) return;
++        if (!this.preset.getConfig().getCarverSettings().isUseModernCaves()) return;
++        synchronized (this) {
++            if (this.caveRandomState != null) return;
++            NoiseCaveSettings caveCfg = this.preset.getConfig().getNoiseCaveSettings();
++            NoiseSettings ns = this.settings.value().noiseSettings();
++
++            boolean regionScaling = this.internalGenerator.hasUndergroundCaveScaling();
++            OTGNoiseRouterData.CaveDensityComponents components = OTGNoiseRouterData.caveDensityComponentsForCarving(
++                    randomState.noises, caveCfg,
++                    this.preset.getFolderName(), ns.minY(), ns.height() + ns.minY(), regionScaling
++            );
++
++            DensityFunction zero = DensityFunctions.constant(0);
++            NoiseRouter caveRouter = new NoiseRouter(
++                    components.spaghetti(),
++                    components.cheese(),
++                    components.noodle(),
++                    zero,
++                    zero, zero, zero, zero,
++                    zero, zero, zero,
++                    components.combined(),
++                    zero, zero, zero
++            );
++
++            NoiseGeneratorSettings original = this.settings.value();
++            NoiseGeneratorSettings caveOnlySettings = new NoiseGeneratorSettings(
++                    original.noiseSettings(), original.defaultBlock(), original.defaultFluid(),
++                    caveRouter, original.surfaceRule(), original.spawnTarget(),
++                    original.seaLevel(), original.disableMobGeneration(),
++                    false, false, original.useLegacyRandomSource()
++            );
++
++            this.caveRandomState = RandomState.create(caveOnlySettings, randomState.noises, this.seed);
++            NoiseRouter processedRouter = this.caveRandomState.router();
++            this.caveComponents = new OTGNoiseRouterData.CaveDensityComponents(
++                    processedRouter.barrierNoise(),
++                    processedRouter.fluidLevelFloodednessNoise(),
++                    processedRouter.fluidLevelSpreadNoise(),
++                    processedRouter.finalDensity()
++            );
++            this.breakthroughNoise = new SimplexNoise(new WorldgenRandom(new LegacyRandomSource(this.seed ^ 0xCA0EB1A5L)));
++            OTGLog.info(LogCategory.MAIN, "Created cave-only RandomState (terrain-independent density, debug components resolved)");
++        }
++    }
++
+     // --- Server level ---
+ 
+     public void setServerLevel(ServerLevel serverLevel) {
+@@ -151,11 +208,13 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+             if (this.serverLevel == null) {
+                 this.serverLevel = serverLevel;
+                 if (this.biomeRegistry == null) {
+-                    this.biomeRegistry = serverLevel.registryAccess().lookupOrThrow(Registries.BIOME);
++                    this.biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registries.BIOME);
+                 }
+                 otgBiomeProvider.setSurfaceHeightEstimator((worldX, worldZ) ->
+                     this.getHighestBlockYInUnloadedChunk(worldX, worldZ, true, true, true, true)
+                 );
++                this.internalGenerator.setSurfaceHeightEstimator((worldX, worldZ) ->
++                    this.getHighestBlockYInUnloadedChunk(worldX, worldZ, true, true, true, true));
+             }
+         }
+     }
+@@ -176,7 +235,9 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+ 
+         Path worldSaveFolder = worldGenLevel.getLevel().getServer().getWorldPath(LevelResource.PLAYER_DATA_DIR).getParent();
+ 
+-        this.chunkDecorator.decorate(chunkBeingDecorated, worldGenRegion, biome.getBiomeSettings(), getStructureCache(worldSaveFolder));
++        UndergroundBiomeMap undergroundMap =
++                this.internalGenerator.buildUndergroundBiomeMap(chunkBeingDecorated, this.otgWorldInfo);
++        this.chunkDecorator.decorate(chunkBeingDecorated, worldGenRegion, biome.getBiomeSettings(), getStructureCache(worldSaveFolder), undergroundMap);
+         long tSuper = System.nanoTime();
+         super.applyBiomeDecoration(worldGenLevel, chunkAccess, structureManager);
+         long superElapsed = System.nanoTime() - tSuper;
+@@ -216,17 +277,26 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+ 
+     // --- Structure generation ---
+ 
++    private static ChunkCoordinate getChunkCoordinate(WorldGenLevel worldGenLevel, ChunkAccess chunkAccess) {
++        int worldX = chunkAccess.getPos().x * Constants.CHUNK_SIZE;
++        int worldZ = chunkAccess.getPos().z * Constants.CHUNK_SIZE;
++
++        WorldgenRandom worldgenRandom = new WorldgenRandom(worldGenLevel.getRandom());
++        worldgenRandom.setDecorationSeed(worldGenLevel.getSeed(), worldX, worldZ);
++
++        return ChunkCoordinate.fromBlockCoords(worldX, worldZ);
++    }
++
+     @Override
+     public void createStructures(
+             RegistryAccess registryAccess,
+             ChunkGeneratorStructureState chunkGeneratorStructureState,
+             StructureManager structureManager,
+             ChunkAccess chunkAccess,
+-            StructureTemplateManager structureTemplateManager,
+-            net.minecraft.resources.ResourceKey<Level> levelKey
++            StructureTemplateManager structureTemplateManager
+     ) {
+         long t0 = System.nanoTime();
+-        super.createStructures(registryAccess, chunkGeneratorStructureState, structureManager, chunkAccess, structureTemplateManager, levelKey);
++        super.createStructures(registryAccess, chunkGeneratorStructureState, structureManager, chunkAccess, structureTemplateManager);
+         long elapsed = System.nanoTime() - t0;
+         structuresTotalNs.addAndGet(elapsed);
+         int count = structuresCount.incrementAndGet();
+@@ -236,14 +306,16 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+         }
+     }
+ 
+-    private static ChunkCoordinate getChunkCoordinate(WorldGenLevel worldGenLevel, ChunkAccess chunkAccess) {
+-        int worldX = chunkAccess.getPos().x * Constants.CHUNK_SIZE;
+-        int worldZ = chunkAccess.getPos().z * Constants.CHUNK_SIZE;
+-
+-        WorldgenRandom worldgenRandom = new WorldgenRandom(worldGenLevel.getRandom());
+-        worldgenRandom.setDecorationSeed(worldGenLevel.getSeed(), worldX, worldZ);
+-
+-        return ChunkCoordinate.fromBlockCoords(worldX, worldZ);
++    @Override
++    public void createReferences(
++            WorldGenLevel worldGenRegion,
++            StructureManager structureManager,
++            ChunkAccess chunkAccess
++    ) {
++        if (this.serverLevel == null) {
++            this.setServerLevel(worldGenRegion.getLevel());
++        }
++        super.createReferences(worldGenRegion, structureManager, chunkAccess);
+     }
+ 
+     // --- Fluid picker ---
+@@ -263,10 +335,10 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+     // --- Carvers ---
+ 
+     @Override
+-    public void applyCarvers(WorldGenRegion worldGenRegion, long seed, RandomState randomState, BiomeManager biomeManager, StructureManager structureManager, ChunkAccess chunkAccess) {
++    public void applyCarvers(WorldGenRegion worldGenRegion, long seed, RandomState randomState, BiomeManager biomeManager, StructureManager structureManager, ChunkAccess chunkAccess, GenerationStep.Carving carving) {
+         long t0 = System.nanoTime();
+         if (this.preset.getConfig().getCarverSettings().isUseModernCaves()) {
+-            this.horribleDelegateForCarvers.applyCarvers(worldGenRegion, seed, randomState, biomeManager, structureManager, chunkAccess);
++            this.horribleDelegateForCarvers.applyCarvers(worldGenRegion, seed, randomState, biomeManager, structureManager, chunkAccess, carving);
+             long elapsed = System.nanoTime() - t0;
+             carversTotalNs.addAndGet(elapsed);
+             int count = carversCount.incrementAndGet();
+@@ -277,7 +349,7 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+             return;
+         }
+ 
+-        handleOTGCarvers(seed, chunkAccess);
++        handleOTGCarvers(seed, chunkAccess, carving);
+ 
+         List<String> defaultCavesAndRavines = Arrays.asList("minecraft:cave", "minecraft:underwater_cave", "minecraft:nether_cave", "minecraft:canyon", "minecraft:underwater_canyon");
+ 
+@@ -286,7 +358,7 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+         int i2 = 8;
+         ChunkPos chunkPos = chunkAccess.getPos();
+         NoiseChunk noiseChunk = chunkAccess.getOrCreateNoiseChunk(chunkAccess2 -> this.createNoiseChunk(chunkAccess2, structureManager, Blender.of(worldGenRegion), randomState));
+-        CarvingMask carvingMask = ((ProtoChunk) chunkAccess).getOrCreateCarvingMask();
++        CarvingMask carvingMask = ((ProtoChunk) chunkAccess).getOrCreateCarvingMask(carving);
+         Aquifer aquifer = noiseChunk.aquifer();
+         CarvingContext carvingContext = new CarvingContext(this.horribleDelegateForCarvers, worldGenRegion.registryAccess(), chunkAccess.getHeightAccessorForGeneration(), noiseChunk, randomState, this.settings.value().surfaceRule());
+         for (int j2 = -8; j2 <= 8; ++j2) {
+@@ -294,7 +366,7 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+                 ChunkPos chunkPos2 = new ChunkPos(chunkPos.x + j2, chunkPos.z + k2);
+                 ChunkAccess chunkAccess22 = worldGenRegion.getChunk(chunkPos2.x, chunkPos2.z);
+                 BiomeGenerationSettings biomeGenerationSettings = chunkAccess22.carverBiome(() -> this.getBiomeGenerationSettings(this.getBiomeSource().getNoiseBiome(QuartPos.fromBlock(chunkPos2.getMinBlockX()), 0, QuartPos.fromBlock(chunkPos2.getMinBlockZ()), randomState.sampler())));
+-                Iterable<Holder<ConfiguredWorldCarver<?>>> iterable = biomeGenerationSettings.getCarvers();
++                Iterable<Holder<ConfiguredWorldCarver<?>>> iterable = biomeGenerationSettings.getCarvers(carving);
+                 int m = 0;
+                 for (Holder<ConfiguredWorldCarver<?>> carver : iterable) {
+                     if (defaultCavesAndRavines.stream().noneMatch(
+@@ -313,10 +385,10 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+         }
+     }
+ 
+-    private void handleOTGCarvers(long seed, ChunkAccess chunkAccess) {
++    private void handleOTGCarvers(long seed, ChunkAccess chunkAccess, GenerationStep.Carving carving) {
+         IBiome biome = this.internalGenerator.getCachedBiomeProvider().getNoiseBiome(chunkAccess.getPos().x << 2, chunkAccess.getPos().z << 2);
+         BiomeGenerationSettings biomegenerationsettings = getBiomeGenerationSettings(biome);
+-        Iterable<Holder<ConfiguredWorldCarver<?>>> iterable = biomegenerationsettings.getCarvers();
++        Iterable<Holder<ConfiguredWorldCarver<?>>> iterable = biomegenerationsettings.getCarvers(carving);
+ 
+         List<String> defaultCaves = Arrays.asList("minecraft:cave", "minecraft:underwater_cave", "minecraft:nether_cave");
+         boolean cavesEnabled = this.preset.getConfig().getCarverSettings().isCavesEnabled();
+@@ -345,7 +417,7 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+         }
+ 
+         ChunkBuffer chunkBuffer = createChunkBuffer(chunkAccess);
+-        CarvingMask carvingMask = ((ProtoChunk) chunkAccess).getOrCreateCarvingMask();
++        CarvingMask carvingMask = ((ProtoChunk) chunkAccess).getOrCreateCarvingMask(carving);
+         BitSet bitSet = BitSet.valueOf(carvingMask.toArray());
+         internalGenerator.carve(
+                 chunkBuffer,
+@@ -370,7 +442,7 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+     @Override
+     public void spawnOriginalMobs(WorldGenRegion worldGenRegion) {
+         ChunkPos chunkPos = worldGenRegion.getCenter();
+-        Holder<Biome> biome = worldGenRegion.getBiome(chunkPos.getWorldPosition().atY(worldGenRegion.getMaxY()));
++        Holder<Biome> biome = worldGenRegion.getBiome(chunkPos.getWorldPosition().atY(worldGenRegion.getMaxBuildHeight() - 1));
+         WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(RandomSupport.generateUniqueSeed()));
+         random.setDecorationSeed(worldGenRegion.getSeed(), chunkPos.getMinBlockX(), chunkPos.getMinBlockZ());
+         NaturalSpawner.spawnMobsForChunkGeneration(worldGenRegion, biome, chunkPos, random);
+@@ -414,25 +486,132 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+ 
+         ChunkBuffer buffer = createChunkBuffer(chunkAccess);
+         Random random = getRandomFromChunkCoord(chunkCoord);
+-
+         long tNoise = System.nanoTime();
+-        this.internalGenerator.populateNoise(otgWorldInfo, buffer,
+-                buffer.getChunkCoordinate(), structures, random);
+-        long noiseElapsed = System.nanoTime() - tNoise;
+-        populateNoiseTotalNs.addAndGet(noiseElapsed);
++        try {
++            this.internalGenerator.populateNoise(otgWorldInfo, buffer,
++                    buffer.getChunkCoordinate(), structures, random);
++            long noiseElapsed = System.nanoTime() - tNoise;
++            populateNoiseTotalNs.addAndGet(noiseElapsed);
++
++            if (this.preset.getConfig().getCarverSettings().isUseModernCaves()) {
++                long tCarve = System.nanoTime();
++                carveWithNoise(blender, randomState, structureManager, chunkAccess, buffer);
++                long carveElapsed = System.nanoTime() - tCarve;
++                carveWithNoiseTotalNs.addAndGet(carveElapsed);
++            }
++        } finally {
++            OTGChunkGenerator.CURRENT_CAVE_MAP.remove();
++        }
+ 
+         long totalElapsed = System.nanoTime() - t0;
+         fillNoiseTotalNs.addAndGet(totalElapsed);
+         int count = fillNoiseCount.incrementAndGet();
+         if (count % TIMING_LOG_INTERVAL == 0) {
+-            OTGLog.info(LogCategory.PERFORMANCE, "fillFromNoise #{} avg={}ms (populateNoise={}ms)", count,
++            OTGLog.info(LogCategory.PERFORMANCE, "fillFromNoise #{} avg={}ms (populateNoise={}ms carveWithNoise={}ms)", count,
+                     String.format("%.1f", fillNoiseTotalNs.get() / 1_000_000.0 / count),
+-                    String.format("%.1f", populateNoiseTotalNs.get() / 1_000_000.0 / count));
++                    String.format("%.1f", populateNoiseTotalNs.get() / 1_000_000.0 / count),
++                    String.format("%.1f", carveWithNoiseTotalNs.get() / 1_000_000.0 / count));
+         }
+ 
+         return CompletableFuture.completedFuture(chunkAccess);
+     }
+ 
++    // --- Noise carving ---
++
++    private void carveWithNoise(Blender blender, RandomState randomState, StructureManager structureManager, ChunkAccess targetChunk, ChunkBuffer terrainBuffer) {
++        initCaveComponents(randomState);
++
++        DensityFunction caveDensity = this.caveRandomState.router().finalDensity();
++
++        NoiseSettings noiseSettings = this.settings.value().noiseSettings();
++        int minY = noiseSettings.minY();
++        int maxY = minY + noiseSettings.height();
++
++        BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
++        BlockState air = Blocks.AIR.defaultBlockState();
++        BlockState debugCheese = Blocks.YELLOW_STAINED_GLASS.defaultBlockState();
++        BlockState debugSpaghetti = Blocks.RED_STAINED_GLASS.defaultBlockState();
++        BlockState debugNoodle = Blocks.BLUE_STAINED_GLASS.defaultBlockState();
++        boolean debugCaveTypes = this.preset.getConfig().getNoiseCaveSettings().isDebugCaveTypes();
++
++        OTGNoiseRouterData.CaveDensityComponents components = this.caveComponents;
++
++        int carved = 0, skippedSolid = 0;
++        boolean firstChunk = targetChunk.getPos().x == 0 && targetChunk.getPos().z == 0;
++
++        int minX = targetChunk.getPos().getMinBlockX();
++        int minZ = targetChunk.getPos().getMinBlockZ();
++
++        NoiseCaveSettings caveCfg = this.preset.getConfig().getNoiseCaveSettings();
++        int suppressionRange = caveCfg.getSurfaceSuppressionRange();
++        double breakthroughChance = caveCfg.getSurfaceBreakthroughChance();
++        double breakthroughScale = caveCfg.getSurfaceBreakthroughScale();
++        double breakthroughThreshold = 1.0 - 2.0 * breakthroughChance;
++
++        for (int x = 0; x < Constants.CHUNK_SIZE; x++) {
++            int worldX = minX + x;
++            for (int z = 0; z < Constants.CHUNK_SIZE; z++) {
++                int worldZ = minZ + z;
++
++                int surfaceY = terrainBuffer.getHighestBlockForColumn(x, z);
++
++                boolean isBreakthroughColumn = false;
++                if (breakthroughChance > 0.0) {
++                    double bNoise = this.breakthroughNoise.getValue(
++                            worldX / breakthroughScale, worldZ / breakthroughScale);
++                    isBreakthroughColumn = bNoise >= breakthroughThreshold;
++                }
++
++                for (int worldY = minY; worldY < maxY; worldY++) {
++                    blockPos.set(worldX, worldY, worldZ);
++                    BlockState existing = targetChunk.getBlockState(blockPos);
++                    if (existing.isAir() || existing.liquid() || existing.is(Blocks.BEDROCK)) continue;
++
++                    double density = caveDensity.compute(
++                            new DensityFunction.SinglePointContext(worldX, worldY, worldZ)
++                    );
++
++                    if (!isBreakthroughColumn && surfaceY > 0) {
++                        int distFromSurface = surfaceY - worldY;
++                        if (distFromSurface >= 0 && distFromSurface < suppressionRange) {
++                            double t = 1.0 - (double) distFromSurface / suppressionRange;
++                            double suppressionFactor = 0.5 * t * t;
++                            density += suppressionFactor;
++                        }
++                    }
++
++                    if (density <= 0) {
++                        if (debugCaveTypes && components != null) {
++                            DensityFunction.SinglePointContext ctx = new DensityFunction.SinglePointContext(worldX, worldY, worldZ);
++                            double spaghettiD = components.spaghetti().compute(ctx);
++                            double cheeseD = components.cheese().compute(ctx);
++                            double noodleD = components.noodle().compute(ctx);
++
++                            BlockState debugBlock;
++                            if (cheeseD <= spaghettiD && cheeseD <= noodleD) {
++                                debugBlock = debugCheese;
++                            } else if (spaghettiD <= cheeseD && spaghettiD <= noodleD) {
++                                debugBlock = debugSpaghetti;
++                            } else {
++                                debugBlock = debugNoodle;
++                            }
++                            targetChunk.setBlockState(blockPos, debugBlock, false);
++                        } else {
++                            targetChunk.setBlockState(blockPos, air, false);
++                        }
++                        carved++;
++                    } else {
++                        skippedSolid++;
++                    }
++                }
++            }
++        }
++
++        if (firstChunk) {
++            OTGLog.info(LogCategory.PERFORMANCE, "carveWithNoise chunk(0,0): carved={} skippedSolid={}", carved, skippedSolid);
++        }
++    }
++
+     // --- Utility ---
+ 
+     public @NotNull Random getRandomFromChunkCoord(ChunkCoordinate chunkCoord) {
+@@ -458,7 +637,7 @@ public abstract class SharedOTGChunkGenerator extends ChunkGenerator {
+     public NoiseColumn getBaseColumn(int i, int j, LevelHeightAccessor levelHeightAccessor, RandomState randomState) {
+         BlockState[] blockStates = new BlockState[levelHeightAccessor.getHeight()];
+         this.sampleHeightmap(i, j, blockStates, null);
+-        return new NoiseColumn(levelHeightAccessor.getMinY(), blockStates);
++        return new NoiseColumn(levelHeightAccessor.getMinBuildHeight(), blockStates);
+     }
+ 
+     @Override

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pg85.otg.biome.SmokeTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-07-23T05:36:06.658Z" hostname="KAICREATE" time="0.006">
+  <properties/>
+  <testcase name="junitWorks()" classname="com.pg85.otg.biome.SmokeTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

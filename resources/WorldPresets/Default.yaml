@@ -1,0 +1,116 @@
+# ============================================================
+# Default WorldPreset
+# ============================================================
+#
+# OTG overworld using DefaultPreset, vanilla nether and end.
+# This is the simplest WorldPreset — a starting point for
+# customization.
+#
+# ---- Quick start ----
+#
+# 1. Copy this file and rename it.
+# 2. Change DisplayName to something unique.
+# 3. Swap PresetFolderName to any DimensionPreset in your
+#    DimensionPresets/ folder (e.g. "Biome Bundle").
+# 4. Add custom dimensions under the Dimensions section.
+#
+# ---- Full documentation ----
+# See "Example 4.yaml" for all available options and
+# detailed explanations of every field.
+# ============================================================
+---
+Version: 1
+
+# DisplayName: shown in the MC world creation GUI.
+# REQUIRED — YAMLs without a DisplayName are not registered.
+DisplayName: "OTG Default"
+
+# Description: optional tooltip in world creation GUI.
+Description: "OTG default terrain with vanilla nether and end."
+
+# ============================================================
+# World-level GameRules
+# ============================================================
+# Applied to ALL dimensions unless overridden per-dimension.
+# Only list rules you want to change — omitted rules use
+# vanilla defaults.
+#
+# GameRules use a 3-layer override hierarchy:
+#   1. DimensionPresetConfig.ini (base, requires OverrideGameRules: true)
+#   2. World-level GameRules below (always applied)
+#   3. Per-dimension GameRules (always applied, highest priority)
+#
+# Full list of available rules: see Example 4.yaml
+# ============================================================
+# GameRules:
+#   KeepInventory: true
+#   MobGriefing: false
+
+# ============================================================
+# Overworld
+# ============================================================
+# PresetFolderName: name of a DimensionPreset folder.
+#
+# For vanilla overworld, replace with:
+#   NonOTGWorldType: "default"    (or "flat", "largeBiomes", etc.)
+#   NonOTGGeneratorSettings:      (optional JSON for flat worlds)
+Overworld:
+  PresetFolderName: "DefaultPreset"
+
+# ============================================================
+# Nether
+# ============================================================
+# Omit PresetFolderName (or the entire section) for vanilla nether.
+# Set PresetFolderName to use an OTG DimensionPreset instead.
+# Nether:
+#   PresetFolderName: "MyNetherPreset"
+
+# ============================================================
+# End
+# ============================================================
+# Same as Nether — omit for vanilla, set PresetFolderName for OTG.
+# End:
+#   PresetFolderName: "MyEndPreset"
+
+# ============================================================
+# Custom Dimensions
+# ============================================================
+# Each entry creates an additional OTG dimension accessible
+# via portal from the overworld.
+#
+# Required:
+#   PresetFolderName    — which DimensionPreset to use
+#
+# Portal settings (optional):
+#   PortalBlocks        — frame block (e.g. "minecraft:emerald_block")
+#   PortalColor         — portal particle color
+#   PortalIgnitionSource — item to ignite (default: flint_and_steel)
+#   PortalMob           — mob that spawns from portal
+#
+# Other settings (optional):
+#   Seed                — world seed for this dimension (random if omitted)
+#   RespawnInDimension  — if true, players without a bed respawn in this
+#                         dimension instead of overworld (default: false)
+#   GameRules           — per-dimension overrides (see above)
+#
+# ---- Portal gating ----
+# Only dimensions listed here get portals. A DimensionPreset
+# that exists in DimensionPresets/ but is NOT listed here
+# cannot be reached via portal.
+# ============================================================
+# Dimensions:
+# - PresetFolderName: "Wildlands"
+#   PortalBlocks: "minecraft:emerald_block"
+#   PortalColor: "green"
+#   PortalIgnitionSource: "minecraft:flint_and_steel"
+#   RespawnInDimension: true
+#   GameRules:
+#     KeepInventory: true
+#     DoDaylightCycle: false
+
+# ============================================================
+# World Settings
+# ============================================================
+Settings:
+  GenerateStructures: true
+  BonusChest: false

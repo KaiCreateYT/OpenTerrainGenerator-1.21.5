@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pg85.otg.biome.BiomePlanResolverTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-07-23T05:36:06.273Z" hostname="KAICREATE" time="0.36">
+  <properties/>
+  <testcase name="biomeIdsByNameContainsAllBiomes()" classname="com.pg85.otg.biome.BiomePlanResolverTest" time="0.03"/>
+  <testcase name="biomeIdsAreSequentialWithNoGaps()" classname="com.pg85.otg.biome.BiomePlanResolverTest" time="0.286"/>
+  <testcase name="oceanBiomeGetsIdZero()" classname="com.pg85.otg.biome.BiomePlanResolverTest" time="0.009"/>
+  <testcase name="colorMapHasEntries()" classname="com.pg85.otg.biome.BiomePlanResolverTest" time="0.012"/>
+  <testcase name="totalBiomeSlotsMatchesEntryCount()" classname="com.pg85.otg.biome.BiomePlanResolverTest" time="0.003"/>
+  <testcase name="nonOceanBiomesStartAtIdOne()" classname="com.pg85.otg.biome.BiomePlanResolverTest" time="0.005"/>
+  <testcase name="groupRegistryIsNotEmpty()" classname="com.pg85.otg.biome.BiomePlanResolverTest" time="0.005"/>
+  <system-out><![CDATA[[OTG] INFO [Configs] 0 biome templates loaded for preset DefaultPreset
+[OTG] INFO [Configs] 97 biome configs loaded for preset DefaultPreset
+[OTG] INFO [Configs] Sky, Desert Lakes, Dark Forest Hills, Jagged Peaks, Birch Forest, Snowy Tundra, Windswept Forest, Swamp, Windswept Gravelly Hills, Tall Birch Forest, Snowy Taiga Mountains, Stony Peaks, tagJungle, Birch Forest Hills, Frozen Peaks, Bamboo Jungle Hills, Meadow, Windswept Savanna, Deep Warm Ocean, Snowy Mountains, Badlands, Lukewarm Ocean, tagMountain, Tall Birch Hills, Badlands Plateau, Jungle, Cold Ocean, tagSandy, Eroded Badlands, Desert Hills, Swamp Hills, tagLushSnowy, Giant Tree Taiga, Jungle Edge, tagForestSnowy, Wooded Badlands Plateau, Mushroom Fields, Ocean, River, Snowy Taiga Hills, Taiga Hills, Mangrove Swamp, Savanna Plateau, tagWater, Flower Forest, Grove, tagMountainSnowy, Mushroom Fields Shore, Frozen River, tagWaterSnowy, tagSandySnowy, Deep Frozen Ocean, Hell, Shattered Savanna Plateau, Modified Wooded Badlands Plateau, The Void, Beach, Snowy Beach, Giant Tree Taiga Hills, LushCaves, Pale Garden, Shattered Savanna, Wooded Hills, Taiga, Jungle Hills, Ice Spikes, Plains, Snowy Taiga, Dark Forest, Giant Spruce Taiga, Frozen Ocean, tagPlainsSnowy, tagPlains, Savanna, Sunflower Plains, DripstoneCaves, Modified Badlands Plateau, Modified Jungle Edge, Stony Shore, tagHillsSnowy, Deep Lukewarm Ocean, Taiga Mountains, Windswept Hills, Giant Spruce Taiga Hills, Cherry Grove, Deep Cold Ocean, DeepDark, tagForest, Modified Jungle, Warm Ocean, Snowy Slopes, tagLush, tagHills, Forest, Desert, Bamboo Jungle, Deep Ocean
+]]></system-out>
+  <system-err><![CDATA[[OTG] ERROR [Configs] The value "dark_forest" is not valid for the setting GrassColorModifier in Dark Forest Hills on line 111: dark_forest is not an acceptable value
+[OTG] ERROR [Configs] The value "acacia" is not valid for the setting VillageType in Windswept Savanna on line 142: acacia is not an acceptable value
+[OTG] WARN [Configs] invalid value(s) in notBorderNear: [Wooded Mountains, Mountain Edge, Mountains]
+[OTG] WARN [Configs] invalid value(s) in notBorderNear: [Gravelly Mountains, Wooded Mountains, Mountain Edge, Mountains, Gravelly Mountains+]
+[OTG] ERROR [Configs] The value "dark_forest" is not valid for the setting GrassColorModifier in Dark Forest on line 111: dark_forest is not an acceptable value
+[OTG] WARN [Configs] invalid value(s) in notBorderNear: [Gravelly Mountains, Gravelly Mountains+]
+[OTG] WARN [Configs] invalid value(s) in borderInBiomes: [Mesa]
+]]></system-err>
+</testsuite>

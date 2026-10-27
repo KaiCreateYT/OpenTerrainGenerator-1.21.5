@@ -1,0 +1,38 @@
+# OTG Terrain Generation Benchmark - After Round 2 Optimizations
+# Date: 2026-02-04
+# Preset: DefaultPreset
+# Configuration: 200 chunks, 5 warmup, 10 measurement iterations
+
+## System Info
+# JDK: Eclipse Adoptium 17
+# Platform: Linux (Fedora)
+
+## Results
+
+Iteration 1: 200 chunks in 437.73 ms (456.9 chunks/sec)
+Iteration 2: 200 chunks in 430.03 ms (465.1 chunks/sec)
+Iteration 3: 200 chunks in 419.87 ms (476.3 chunks/sec)
+Iteration 4: 200 chunks in 411.54 ms (486.0 chunks/sec)
+Iteration 5: 200 chunks in 437.60 ms (457.0 chunks/sec)
+Iteration 6: 200 chunks in 441.46 ms (453.0 chunks/sec)
+Iteration 7: 200 chunks in 414.60 ms (482.4 chunks/sec)
+Iteration 8: 200 chunks in 413.77 ms (483.4 chunks/sec)
+Iteration 9: 200 chunks in 415.32 ms (481.6 chunks/sec)
+Iteration 10: 200 chunks in 407.06 ms (491.3 chunks/sec)
+
+=== SUMMARY ===
+Average: 422.90 ms for 200 chunks
+Throughput: 472.9 chunks/sec
+Per chunk: 2.114 ms
+Min: 407.06 ms, Max: 441.46 ms
+
+## Comparison with Baseline (Round 1)
+Baseline: 466.3 chunks/sec, 2.145 ms/chunk
+After R2: 472.9 chunks/sec, 2.114 ms/chunk
+Improvement: +1.4% throughput, -1.4% latency
+
+## Round 2 Optimizations Applied
+1. Cache getSurfaceSettings() in populateNoise inner loop
+2. Hoist MutableBoolean allocation in Carver
+3. Cache getTerrainSettings() in getNoiseColumn()
+4. Eliminate ThreadLocal boxing with holder class (includes buffer reuse)

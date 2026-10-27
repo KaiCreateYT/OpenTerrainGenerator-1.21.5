@@ -1,0 +1,214 @@
+# ============================================================
+# WorldPreset Configuration — Example
+# ============================================================
+#
+# A WorldPreset defines a complete Minecraft world: which
+# DimensionPresets to use for each dimension, plus optional
+# per-dimension GameRules overrides.
+#
+# WorldPresets appear as selectable world types in the Minecraft
+# world creation GUI alongside individual DimensionPresets.
+#
+# ---- How to use ----
+#
+# 1. Place this file in the WorldPresets/ folder inside your
+#    OTG config directory (typically config/OpenTerrainGenerator/).
+#
+# 2. Set a unique DisplayName — this is what appears in the
+#    world creation GUI.
+#
+# 3. Under Overworld/Nether/End, set PresetFolderName to the
+#    name of the DimensionPreset folder you want to use.
+#    Leave blank or omit for vanilla generation.
+#
+# 4. Use the Dimensions list to add custom OTG dimensions
+#    with portal configuration.
+#
+# ---- GameRules ----
+#
+# GameRules use a 3-layer override hierarchy:
+#
+#   Layer 1: DimensionPresetConfig.ini GameRules
+#            (base rules from the dimension's preset)
+#
+#   Layer 2: Top-level GameRules in this file
+#            (world-level defaults, override layer 1)
+#
+#   Layer 3: Per-dimension GameRules
+#            (dimension-specific overrides, override layer 2)
+#
+# Only rules explicitly listed are overridden — omitted rules
+# keep their value from the previous layer.
+#
+# GameRules are applied once at world creation and persisted.
+# Players can still change them via /gamerule in-game.
+#
+# ---- Available GameRules ----
+#
+# Boolean rules:
+#   DoFireTick, MobGriefing, KeepInventory, DoMobSpawning,
+#   DoMobLoot, DoTileDrops, DoEntityDrops, CommandBlockOutput,
+#   NaturalRegeneration, DoDaylightCycle, LogAdminCommands,
+#   ShowDeathMessages, SendCommandFeedback,
+#   SpectatorsGenerateChunks, DisableElytraMovementCheck,
+#   DoWeatherCycle, DoLimitedCrafting, AnnounceAdvancements,
+#   DisableRaids, DoInsomnia, DrowningDamage, FallDamage,
+#   FireDamage, DoPatrolSpawning, DoTraderSpawning,
+#   ForgiveDeadPlayers, UniversalAnger,
+#   ProjectilesCanBreakBlocks, ReducedDebugInfo,
+#   DoImmediateRespawn, FreezeDamage, DoWardenSpawning,
+#   BlockExplosionDropDecay, MobExplosionDropDecay,
+#   TntExplosionDropDecay, WaterSourceConversion,
+#   LavaSourceConversion, GlobalSoundEvents, DoVinesSpread,
+#   EnderPearlsVanishOnDeath
+#
+# Integer rules:
+#   RandomTickSpeed, SpawnRadius, MaxEntityCramming,
+#   MaxCommandChainLength, MaxCommandForkCount,
+#   CommandModificationBlockLimit,
+#   PlayersNetherPortalDefaultDelay,
+#   PlayersNetherPortalCreativeDelay,
+#   PlayersSleepingPercentage, SnowAccumulationHeight,
+#   SpawnChunkRadius
+#
+# ============================================================
+---
+Version: 1
+
+# DisplayName: shown in the MC world creation GUI.
+# REQUIRED — YAMLs without DisplayName are not registered in the GUI.
+DisplayName: "Example World"
+
+# Description: optional, shown in the world creation GUI tooltip.
+Description: "An example WorldPreset with a flat overworld, OTG nether and end, plus two custom dimensions."
+
+# ModpackName: optional, for modpack identification.
+ModpackName: "My Awesome Modpack"
+
+# ============================================================
+# World-level GameRules
+# ============================================================
+# Applied to ALL dimensions in this world unless overridden
+# per-dimension below.
+GameRules:
+  DoFireTick: true
+  MobGriefing: true
+  KeepInventory: false
+  DoMobSpawning: true
+  DoMobLoot: true
+  DoTileDrops: true
+  DoEntityDrops: true
+  CommandBlockOutput: true
+  NaturalRegeneration: true
+  DoDaylightCycle: true
+  LogAdminCommands: true
+  ShowDeathMessages: true
+  RandomTickSpeed: 3
+  SendCommandFeedback: true
+  SpectatorsGenerateChunks: true
+  SpawnRadius: 10
+  DisableElytraMovementCheck: false
+  MaxEntityCramming: 24
+  DoWeatherCycle: true
+  DoLimitedCrafting: false
+  MaxCommandChainLength: 65536
+  AnnounceAdvancements: true
+  DisableRaids: false
+  DoInsomnia: true
+  DrowningDamage: true
+  FallDamage: true
+  FireDamage: true
+  DoPatrolSpawning: true
+  DoTraderSpawning: true
+  ForgiveDeadPlayers: true
+  UniversalAnger: false
+  ProjectilesCanBreakBlocks: true
+  ReducedDebugInfo: false
+  DoImmediateRespawn: false
+  FreezeDamage: true
+  DoWardenSpawning: true
+  BlockExplosionDropDecay: true
+  MobExplosionDropDecay: true
+  TntExplosionDropDecay: false
+  WaterSourceConversion: true
+  LavaSourceConversion: false
+  GlobalSoundEvents: true
+  DoVinesSpread: true
+  EnderPearlsVanishOnDeath: true
+  MaxCommandForkCount: 65536
+  CommandModificationBlockLimit: 32768
+  PlayersNetherPortalDefaultDelay: 80
+  PlayersNetherPortalCreativeDelay: 1
+  PlayersSleepingPercentage: 100
+  SnowAccumulationHeight: 1
+  SpawnChunkRadius: 2
+
+# ============================================================
+# Overworld
+# ============================================================
+# PresetFolderName: which DimensionPreset to use for the overworld.
+#
+# For a vanilla overworld, use NonOTGWorldType instead:
+#   NonOTGWorldType: "flat"
+#   NonOTGGeneratorSettings: (optional JSON string)
+Overworld:
+  NonOTGWorldType: "flat"
+  NonOTGGeneratorSettings:
+
+# ============================================================
+# Nether
+# ============================================================
+# Set PresetFolderName to an OTG DimensionPreset name.
+# Omit the entire section or set PresetFolderName to null
+# for vanilla nether generation.
+Nether:
+  PresetFolderName: "AlienJungle"
+
+# ============================================================
+# End
+# ============================================================
+# Same as Nether — set PresetFolderName or omit for vanilla.
+End:
+  PresetFolderName: "Skylands"
+
+# ============================================================
+# Custom Dimensions
+# ============================================================
+# Each entry creates an additional OTG dimension.
+#
+# Required:
+#   PresetFolderName — which DimensionPreset to use
+#
+# Optional:
+#   Seed — world seed for this dimension (random if omitted)
+#   PortalColor — portal frame color
+#   PortalMob — mob that spawns from portal
+#   PortalIgnitionSource — item to ignite portal
+#   PortalBlocks — block type for portal frame
+#   GameRules — per-dimension GameRules override
+Dimensions:
+- PresetFolderName: "Wildlands"
+  Seed: 14
+  PortalColor: "beige"
+  PortalMob: "minecraft:zombified_piglin"
+  PortalIgnitionSource: "minecraft:flint_and_steel"
+  PortalBlocks: "minecraft:redstone_block"
+  # Per-dimension GameRules: only these rules are overridden
+  GameRules:
+    DoWeatherCycle: false
+    DoFireTick: false
+
+- PresetFolderName: "VanillaVistas"
+  Seed: 14
+  PortalColor: "gold"
+  PortalMob: "minecraft:zombified_piglin"
+  PortalIgnitionSource: "minecraft:flint_and_steel"
+  PortalBlocks: "minecraft:diamond_block"
+  # No GameRules = uses world-level defaults
+
+# ============================================================
+# World Settings
+# ============================================================
+Settings:
+  GenerateStructures: true
+  BonusChest: false

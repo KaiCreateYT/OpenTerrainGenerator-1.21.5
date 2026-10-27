@@ -1,0 +1,194 @@
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                          Biome Identity                         | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+TemplateForBiome: false
+
+BiomeDictTags: MESA, SANDY, OVERWORLD
+
+BiomeCategory: mesa
+
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                         Biome placement                         | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+BiomeSize: 3
+
+BiomeRarity: 39
+
+BiomeColor: 0xD94515
+
+
+#######################################################################
+# |                           Isle biomes                           | #
+#######################################################################
+
+IsleInBiome:
+
+BiomeSizeWhenIsle: 6
+
+BiomeRarityWhenIsle: 97
+
+#################
+# Border biomes #
+#################
+
+BiomeIsBorder:
+
+OnlyBorderNear:
+
+NotBorderNear: Taiga, Taiga Hills, Taiga Mountains, Snowy Taiga, Snowy Taiga Hills, Snowy Taiga Mountains, Snowy Tundra, Snowy Mountains, Ice Spikes, Giant Tree Taiga, Giant Spruce Taiga, Forest, Birch Forest, Dark Forest
+
+BiomeSizeWhenBorder: 8
+
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                  Terrain height and volatility                  | #
+BiomeHeight: 0.7
+BiomeVolatility: 0.6
+SmoothRadius: 4
+CustomHeightControlSmoothRadius: 2
+MaxAverageHeight: 50
+MaxAverageDepth: 0.0
+Volatility1: 0.8
+Volatility2: 0.4
+VolatilityWeight1: 48.0
+VolatilityWeight2: 46.8
+Volatility: 0.0
+DisableBiomeHeight: false
+ContinentalScale: 0.6116:0.8116
+ErosionScale: -0.6794:-0.4794
+WeirdnessScale: -0.3884:-0.1884
+CustomHeightControl: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                              Blocks                             | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+StoneBlock: minecraft:stone
+SurfaceBlock: minecraft:grass_block
+GroundBlock: minecraft:dirt
+UnderWaterSurfaceBlock: minecraft:dirt
+SurfaceAndGroundControl:
+ReplacedBlocks:
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                   Water / Lava & Frozen States                  | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+UseWorldWaterLevel: true
+WaterLevelMax: 63
+WaterLevelMin: 0
+WaterBlock: minecraft:water
+IceBlock: minecraft:ice
+PackedIceBlock: minecraft:packed_ice
+SnowBlock: minecraft:snow_block
+CooledLavaBlock: minecraft:lava
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                       Visuals and weather                       | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+BiomeTemperature: 2
+UseFrozenOceanTemperature: false
+BiomeWetness: 0
+SkyColor: 0x6eb1ff
+WaterColor: 0x4B4518
+WaterColorControl:
+GrassColor: 0x90814d
+GrassColorControl:
+GrassColorModifier: None
+FoliageColor: 0x9e814d
+FoliageColorControl:
+FogColor: 0xC0D8FF
+FogDensity: 0.0
+WaterFogColor: 0x050533
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                          Resource queue                         | #
+Registry(minecraft:freeze_top_layer,TOP_LAYER_MODIFICATION)
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                         Sapling resource                        | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                        Vanilla structures                       | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+StrongholdsEnabled: true
+
+WoodlandMansionsEnabled: false
+
+OceanMonumentsEnabled: false
+
+NetherFortressesEnabled: false
+
+VillageType: disabled
+
+VillageSize: 6
+
+MineshaftType: mesa
+
+MineshaftProbability: 0.004
+
+RareBuildingType: disabled
+
+BuriedTreasureEnabled: false
+
+BuriedTreasureProbability: 0.01
+
+ShipWreckEnabled: false
+
+ShipWreckBeachedEnabled: false
+
+PillagerOutpostEnabled: false
+
+PillagerOutpostSize: 7
+
+BastionRemnantEnabled: false
+
+BastionRemnantSize: 6
+
+NetherFossilEnabled: false
+
+EndCityEnabled: false
+
+RuinedPortalType: normal
+
+OceanRuinsType: disabled
+
+OceanRuinsLargeProbability: 0.3
+
+OceanRuinsClusterProbability: 0.9
+
+
+#######################################################################
+# +-----------------------------------------------------------------+ #
+# |                           Mob spawning                          | #
+# +-----------------------------------------------------------------+ #
+#######################################################################
+
+SpawnMonsters: []
+SpawnCreatures: []
+SpawnWaterCreatures: []
+SpawnAmbientCreatures: []
+SpawnWaterAmbientCreatures: []
+SpawnMiscCreatures: []
+InheritMobsBiomeName: minecraft:badlands

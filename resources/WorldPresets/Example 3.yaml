@@ -1,0 +1,16 @@
+# WorldPreset: defines a complete world with OTG dimensions.
+# See "Example 4.yaml" for full documentation and all available options.
+#
+# This config creates a Biomes O' Plenty overworld with OTG Nether
+# and End using the "Skylands" and "SkylandsTall" presets.
+# It also adds a custom dimension using the "VanillaVistas" preset.
+---
+Overworld:
+  NonOTGWorldType: "biomesoplenty"
+  NonOTGGeneratorSettings:
+Nether:
+  PresetFolderName: "Skylands"
+End:
+  PresetFolderName: "SkylandsTall"
+Dimensions:
+- PresetFolderName: "VanillaVistas"
